@@ -1,0 +1,20 @@
+{
+  "name": "guantes-de-oro",
+  "version": "1.0.0",
+  "description": "Aplicación de casa de cambio Guantes de Oro",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "web",
+    "shared"
+  ],
+  "scripts": {
+    "backend": "npm run dev --workspace=backend",
+    "web": "npm run dev --workspace=web",
+    "build:web": "npm run build --workspace=web",
+    "build:backend": "npm run build --workspace=backend"
+  },
+  "keywords": ["currency", "exchange", "guantes de oro"],
+  "author": "Guantes de Oro",
+  "license": "MIT"
+}
