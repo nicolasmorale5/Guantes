@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { db } = require('../config/database');
+const { getDb } = require('../config/database');
 const { generarToken, verificarToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -14,6 +14,7 @@ router.post('/login', (req, res) => {
       return res.status(400).json({ error: 'Email y contraseña son requeridos' });
     }
 
+    const db = getDb();
     const usuario = db.prepare('SELECT * FROM usuarios WHERE email = ? AND activo = 1').get(email);
 
     if (!usuario) {
@@ -61,6 +62,7 @@ router.post('/cambiar-password', verificarToken, (req, res) => {
       return res.status(400).json({ error: 'Contraseña actual y nueva son requeridas' });
     }
 
+    const db = getDb();
     const usuario = db.prepare('SELECT * FROM usuarios WHERE id = ?').get(req.usuario.id);
 
     if (!bcrypt.compareSync(passwordActual, usuario.password)) {

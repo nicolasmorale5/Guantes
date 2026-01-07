@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const { db } = require('../config/database');
+const { getDb } = require('../config/database');
 const { verificarToken, verificarAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -17,6 +17,7 @@ function generarCodigoCita() {
 // Crear nueva cita (público)
 router.post('/', (req, res) => {
   try {
+    const db = getDb();
     const {
       nombre_cliente,
       telefono_cliente,
@@ -90,6 +91,7 @@ router.post('/', (req, res) => {
 // Consultar cita por código (público)
 router.get('/consultar/:codigo', (req, res) => {
   try {
+    const db = getDb();
     const { codigo } = req.params;
     const cita = db.prepare(`
       SELECT
@@ -116,6 +118,7 @@ router.get('/consultar/:codigo', (req, res) => {
 // Cancelar cita (público - con código)
 router.post('/cancelar/:codigo', (req, res) => {
   try {
+    const db = getDb();
     const { codigo } = req.params;
 
     const cita = db.prepare('SELECT * FROM citas WHERE codigo_cita = ?').get(codigo);
@@ -144,6 +147,7 @@ router.post('/cancelar/:codigo', (req, res) => {
 // Obtener horarios disponibles para una fecha y oficina
 router.get('/disponibilidad/:oficina_id/:fecha', (req, res) => {
   try {
+    const db = getDb();
     const { oficina_id, fecha } = req.params;
 
     // Horarios disponibles (de 9:00 a 18:00, cada 30 minutos)
@@ -185,6 +189,7 @@ router.get('/disponibilidad/:oficina_id/:fecha', (req, res) => {
 // Obtener todas las citas (admin)
 router.get('/', verificarToken, verificarAdmin, (req, res) => {
   try {
+    const db = getDb();
     const { fecha, estado, oficina_id } = req.query;
     let query = `
       SELECT
@@ -224,6 +229,7 @@ router.get('/', verificarToken, verificarAdmin, (req, res) => {
 // Actualizar estado de cita (admin)
 router.put('/:id/estado', verificarToken, verificarAdmin, (req, res) => {
   try {
+    const db = getDb();
     const { id } = req.params;
     const { estado } = req.body;
 
@@ -248,6 +254,7 @@ router.put('/:id/estado', verificarToken, verificarAdmin, (req, res) => {
 // Estadísticas de citas (admin)
 router.get('/estadisticas/resumen', verificarToken, verificarAdmin, (req, res) => {
   try {
+    const db = getDb();
     const hoy = new Date().toISOString().split('T')[0];
 
     const citasHoy = db.prepare(`

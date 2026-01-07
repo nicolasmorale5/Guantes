@@ -1,5 +1,5 @@
 const express = require('express');
-const { db } = require('../config/database');
+const { getDb } = require('../config/database');
 const { verificarToken, verificarAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -7,6 +7,7 @@ const router = express.Router();
 // Obtener todas las divisas
 router.get('/', (req, res) => {
   try {
+    const db = getDb();
     const divisas = db.prepare('SELECT * FROM divisas WHERE activo = 1 ORDER BY codigo').all();
     res.json(divisas);
   } catch (error) {
@@ -18,6 +19,7 @@ router.get('/', (req, res) => {
 // Obtener tasas de cambio
 router.get('/tasas', (req, res) => {
   try {
+    const db = getDb();
     const tasas = db.prepare(`
       SELECT
         tc.*,
@@ -40,6 +42,7 @@ router.get('/tasas', (req, res) => {
 // Obtener tasa específica
 router.get('/tasas/:origen/:destino', (req, res) => {
   try {
+    const db = getDb();
     const { origen, destino } = req.params;
     const tasa = db.prepare(`
       SELECT * FROM tasas_cambio
@@ -60,6 +63,7 @@ router.get('/tasas/:origen/:destino', (req, res) => {
 // Calcular conversión
 router.post('/convertir', (req, res) => {
   try {
+    const db = getDb();
     const { origen, destino, monto, tipo } = req.body;
 
     if (!origen || !destino || !monto) {
@@ -96,6 +100,7 @@ router.post('/convertir', (req, res) => {
 // Actualizar tasa de cambio (requiere admin)
 router.put('/tasas/:id', verificarToken, verificarAdmin, (req, res) => {
   try {
+    const db = getDb();
     const { id } = req.params;
     const { tasa_compra, tasa_venta } = req.body;
 
@@ -123,6 +128,7 @@ router.put('/tasas/:id', verificarToken, verificarAdmin, (req, res) => {
 // Crear nueva tasa de cambio (requiere admin)
 router.post('/tasas', verificarToken, verificarAdmin, (req, res) => {
   try {
+    const db = getDb();
     const { divisa_origen, divisa_destino, tasa_compra, tasa_venta } = req.body;
 
     if (!divisa_origen || !divisa_destino || !tasa_compra || !tasa_venta) {
@@ -156,6 +162,7 @@ router.post('/tasas', verificarToken, verificarAdmin, (req, res) => {
 // Eliminar tasa de cambio (requiere admin)
 router.delete('/tasas/:id', verificarToken, verificarAdmin, (req, res) => {
   try {
+    const db = getDb();
     const { id } = req.params;
     const resultado = db.prepare('DELETE FROM tasas_cambio WHERE id = ?').run(id);
 

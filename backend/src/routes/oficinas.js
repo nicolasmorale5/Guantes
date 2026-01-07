@@ -1,5 +1,5 @@
 const express = require('express');
-const { db } = require('../config/database');
+const { getDb } = require('../config/database');
 const { verificarToken, verificarAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -7,6 +7,7 @@ const router = express.Router();
 // Obtener todas las oficinas
 router.get('/', (req, res) => {
   try {
+    const db = getDb();
     const oficinas = db.prepare('SELECT * FROM oficinas WHERE activo = 1 ORDER BY nombre').all();
     res.json(oficinas);
   } catch (error) {
@@ -18,6 +19,7 @@ router.get('/', (req, res) => {
 // Obtener oficina por ID
 router.get('/:id', (req, res) => {
   try {
+    const db = getDb();
     const { id } = req.params;
     const oficina = db.prepare('SELECT * FROM oficinas WHERE id = ? AND activo = 1').get(id);
 
@@ -35,6 +37,7 @@ router.get('/:id', (req, res) => {
 // Crear oficina (requiere admin)
 router.post('/', verificarToken, verificarAdmin, (req, res) => {
   try {
+    const db = getDb();
     const { nombre, direccion, telefono, horario, latitud, longitud } = req.body;
 
     if (!nombre || !direccion) {
@@ -59,6 +62,7 @@ router.post('/', verificarToken, verificarAdmin, (req, res) => {
 // Actualizar oficina (requiere admin)
 router.put('/:id', verificarToken, verificarAdmin, (req, res) => {
   try {
+    const db = getDb();
     const { id } = req.params;
     const { nombre, direccion, telefono, horario, latitud, longitud } = req.body;
 
@@ -87,6 +91,7 @@ router.put('/:id', verificarToken, verificarAdmin, (req, res) => {
 // Desactivar oficina (requiere admin)
 router.delete('/:id', verificarToken, verificarAdmin, (req, res) => {
   try {
+    const db = getDb();
     const { id } = req.params;
     const resultado = db.prepare('UPDATE oficinas SET activo = 0 WHERE id = ?').run(id);
 

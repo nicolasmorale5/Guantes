@@ -1,12 +1,127 @@
-const Database = require('better-sqlite3');
+const initSqlJs = require('sql.js');
+const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.join(__dirname, '../../data/guantes.db');
-const db = new Database(dbPath);
+// Use /tmp for Vercel or local data folder
+const isVercel = process.env.VERCEL === '1';
+const dbDir = isVercel ? '/tmp' : path.join(__dirname, '../../data');
+const dbPath = path.join(dbDir, 'guantes.db');
+
+// Ensure data directory exists (only for local)
+if (!isVercel && !fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
+// Database wrapper to mimic better-sqlite3 API
+class DatabaseWrapper {
+  constructor(sqlJsDb) {
+    this.db = sqlJsDb;
+    this.dbPath = dbPath;
+  }
+
+  exec(sql) {
+    this.db.run(sql);
+    this.save();
+  }
+
+  prepare(sql) {
+    const self = this;
+    return {
+      get(...params) {
+        const stmt = self.db.prepare(sql);
+        if (params.length > 0) {
+          stmt.bind(params);
+        }
+        if (stmt.step()) {
+          const result = stmt.getAsObject();
+          stmt.free();
+          return result;
+        }
+        stmt.free();
+        return undefined;
+      },
+      all(...params) {
+        const results = [];
+        const stmt = self.db.prepare(sql);
+        if (params.length > 0) {
+          stmt.bind(params);
+        }
+        while (stmt.step()) {
+          results.push(stmt.getAsObject());
+        }
+        stmt.free();
+        return results;
+      },
+      run(...params) {
+        const stmt = self.db.prepare(sql);
+        if (params.length > 0) {
+          stmt.bind(params);
+        }
+        stmt.step();
+        stmt.free();
+        self.save();
+        return {
+          changes: self.db.getRowsModified(),
+          lastInsertRowid: self.getLastInsertRowid()
+        };
+      }
+    };
+  }
+
+  getLastInsertRowid() {
+    const stmt = this.db.prepare('SELECT last_insert_rowid() as id');
+    stmt.step();
+    const result = stmt.getAsObject();
+    stmt.free();
+    return result.id;
+  }
+
+  save() {
+    const data = this.db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(this.dbPath, buffer);
+  }
+}
+
+let db = null;
+let dbReady = false;
+let dbInitPromise = null;
+
+async function initDatabase() {
+  if (dbReady) return db;
+  if (dbInitPromise) return dbInitPromise;
+
+  dbInitPromise = (async () => {
+    const SQL = await initSqlJs();
+
+    let sqlJsDb;
+    if (fs.existsSync(dbPath)) {
+      const fileBuffer = fs.readFileSync(dbPath);
+      sqlJsDb = new SQL.Database(fileBuffer);
+    } else {
+      sqlJsDb = new SQL.Database();
+    }
+
+    db = new DatabaseWrapper(sqlJsDb);
+    dbReady = true;
+    return db;
+  })();
+
+  return dbInitPromise;
+}
+
+function getDb() {
+  if (!db) {
+    throw new Error('Database not initialized. Call initDatabase() first.');
+  }
+  return db;
+}
 
 // Crear tablas
-function initializeDatabase() {
+async function initializeDatabase() {
+  const db = await initDatabase();
+
   // Tabla de usuarios (administradores)
   db.exec(`
     CREATE TABLE IF NOT EXISTS usuarios (
@@ -81,10 +196,10 @@ function initializeDatabase() {
   `);
 
   // Insertar datos iniciales si no existen
-  insertarDatosIniciales();
+  insertarDatosIniciales(db);
 }
 
-function insertarDatosIniciales() {
+function insertarDatosIniciales(db) {
   // Verificar si ya hay datos
   const hayUsuarios = db.prepare('SELECT COUNT(*) as count FROM usuarios').get();
 
@@ -147,4 +262,4 @@ function insertarDatosIniciales() {
   }
 }
 
-module.exports = { db, initializeDatabase };
+module.exports = { getDb, initializeDatabase, initDatabase };
