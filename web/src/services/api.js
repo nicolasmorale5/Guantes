@@ -180,8 +180,8 @@ export const divisas = {
       destino,
       monto: parseFloat(monto),
       tipo,
-      tasa: tasaUsada,
-      resultado: resultado
+      tasa_aplicada: tasaUsada,
+      monto_convertido: resultado
     };
   },
 
