@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { auth } from '../services/api'
 
 function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   // Verificar autenticación
   if (!auth.isAuthenticated()) {
@@ -11,6 +13,11 @@ function AdminLayout() {
   }
 
   const usuario = auth.getUsuario()
+
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
 
   const handleLogout = () => {
     auth.logout()
@@ -21,17 +28,32 @@ function AdminLayout() {
     return location.pathname === path ? 'admin-nav-item active' : 'admin-nav-item'
   }
 
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen)
+  }
+
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
         <div className="admin-sidebar-header">
-          <div className="logo">
+          <Link to="/admin" className="logo">
             <div className="logo-icon">🥊</div>
             <span>Admin</span>
-          </div>
+          </Link>
+
+          {/* Mobile Menu Toggle */}
+          <button
+            className="admin-menu-toggle"
+            onClick={toggleMenu}
+            aria-label="Toggle admin menu"
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? '✕' : '☰'}
+          </button>
         </div>
+
         <nav>
-          <ul className="admin-nav">
+          <ul className={`admin-nav ${menuOpen ? 'active' : ''}`}>
             <li>
               <Link to="/admin" className={isActive('/admin')}>
                 📊 Dashboard
@@ -58,7 +80,7 @@ function AdminLayout() {
               </Link>
             </li>
             <li>
-              <button onClick={handleLogout} className="admin-nav-item" style={{ width: '100%', background: 'none', border: 'none', textAlign: 'left' }}>
+              <button onClick={handleLogout} className="admin-nav-item">
                 🚪 Cerrar Sesión
               </button>
             </li>

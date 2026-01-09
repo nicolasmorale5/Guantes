@@ -1,10 +1,33 @@
+import { useState, useEffect } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 
 function Layout() {
   const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
+
+  // Prevent body scroll when menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [menuOpen])
 
   const isActive = (path) => {
     return location.pathname === path ? 'nav-link active' : 'nav-link'
+  }
+
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen)
   }
 
   return (
@@ -15,7 +38,27 @@ function Layout() {
             <div className="logo-icon">🥊</div>
             <span>Guantes de Oro</span>
           </Link>
-          <nav className="nav">
+
+          {/* Mobile Menu Toggle */}
+          <button
+            className={`menu-toggle ${menuOpen ? 'active' : ''}`}
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+            aria-expanded={menuOpen}
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          {/* Navigation Overlay */}
+          <div
+            className={`nav-overlay ${menuOpen ? 'active' : ''}`}
+            onClick={() => setMenuOpen(false)}
+          />
+
+          {/* Navigation */}
+          <nav className={`nav ${menuOpen ? 'active' : ''}`}>
             <Link to="/" className={isActive('/')}>Inicio</Link>
             <Link to="/tasas" className={isActive('/tasas')}>Tasas</Link>
             <Link to="/oficinas" className={isActive('/oficinas')}>Oficinas</Link>
@@ -59,7 +102,7 @@ function Layout() {
           </div>
         </div>
         <div className="footer-bottom">
-          <p>&copy; 2024 Guantes de Oro. Todos los derechos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} Guantes de Oro. Todos los derechos reservados.</p>
         </div>
       </footer>
     </div>
